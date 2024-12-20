@@ -22,6 +22,9 @@ import (
 )
 
 const (
+	// Disk Params
+	ParameterAccessMode						  = "access-mode"
+
 	// Parameters for StorageClass
 	ParameterKeyType                          = "type"
 	ParameterKeyReplicationType               = "replication-type"
@@ -106,6 +109,9 @@ type DiskParameters struct {
 	// Values: {bool}
 	// Default: false
 	MultiZoneProvisioning bool
+	// Values: READ_WRITE_SINGLE, READ_ONLY_MANY, READ_WRITE_MANY
+	// Default: READ_WRITE_SINGLE
+	AccessMode string
 }
 
 // SnapshotParameters contains normalized and defaulted parameters for snapshots
@@ -201,6 +207,9 @@ func (pp *ParameterProcessor) ExtractAndDefaultParameters(parameters map[string]
 			if err != nil {
 				return p, fmt.Errorf("parameters contain invalid provisionedThroughputOnCreate parameter: %w", err)
 			}
+			if paramProvisionedThroughputOnCreate < 0 {
+				return p, fmt.Errorf("parameter provisionedThroughputOnCreate cannot be negative")
+			}
 			p.ProvisionedThroughputOnCreate = paramProvisionedThroughputOnCreate
 		case ParameterAvailabilityClass:
 			paramAvailabilityClass, err := ConvertStringToAvailabilityClass(v)
@@ -249,6 +258,10 @@ func (pp *ParameterProcessor) ExtractAndDefaultParameters(parameters map[string]
 			p.MultiZoneProvisioning = paramEnableMultiZoneProvisioning
 			if paramEnableMultiZoneProvisioning {
 				p.Labels[MultiZoneLabel] = "true"
+			}
+		case ParameterAccessMode:
+			if v != "" {
+				p.AccessMode = v
 			}
 		default:
 			return p, fmt.Errorf("parameters contains invalid option %q", k)
